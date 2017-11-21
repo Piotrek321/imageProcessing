@@ -50,65 +50,97 @@ vector<vector<int>> Sobely = {
 {0, 0, 0},
 {1, 2, 1}
 };
-
 double coeffs[] = {0.0545, 0.2442, 0.4026, 0.2442, 0.0545};
 
-void runGaussianBlurFilter(Mat &imageToFilter, const Mat & original)
+void gaussForRGB(Mat &imageToFilter, const Mat & original)
 {
-Mat tempImage = original.clone();
-int y1, x1;
+ Mat tempImage = original.clone();
+ int y1, x1;
+ vector<double> sum(original.channels(), 0.0);
  for(int y=0;y<original.rows;y++)
     {
         for(int x=0;x<original.cols;x++)
         {
-         // Vec3b color = original.at<Vec3b>(Point(x,y));
-         // vector<double> sum(original.channels(), 0.0);  
-          Vec3b sum;
             for (int i =-2; i<=2; ++i)         
             {
               y1 = reflect(original.rows, y - i);
-              if(original.channels() ==3)
-              {
-                sum[0] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[0] ;
-                sum[1] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[1] ;
-                sum[2] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[2] ;
-              }
-              else
-              {
-                sum += coeffs[i+2] * original.at<Vec3b>(Point(y1, x)) ;      
-              }            
+              sum[0] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[0] ;
+              sum[1] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[1] ;
+              sum[2] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[2] ;          
             }
-          Vec3b color = sum ;
-          tempImage.at<Vec3b>(Point(y,x)) = color;
+          Vec3b color;   
+            color[0] = sum[0];
+            color[1] = sum[1];
+            color[2] = sum[2];
+           tempImage.at<Vec3b>(Point(y,x)) = color;
         }
 	}
-  imshow("Partial gauss", tempImage);
+
 for(int y=0;y<original.rows;y++)
     {
         for(int x=0;x<original.cols;x++)
         {
-          Vec3b sum;
-          for(int channels = 0; channels< original.channels(); channels++)
-          {
             for (int i =-2; i<=2; ++i)         
             {
               x1 = reflect(original.rows, x - i);
-              if(original.channels() ==3)
-              {
-                sum[0] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[0] ;
-                sum[1] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[1] ;
-                sum[2] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[2] ;
-              }
-              else
-              {
-                sum += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x)) ;      
-              }    
+              sum[0] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[0] ;
+              sum[1] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[1] ;
+              sum[2] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[2] ;          
             }
-            
-          }
-          Vec3b color = sum;
+          Vec3b color;
+            color[0] = sum[0];
+            color[1] = sum[1];
+            color[2] = sum[2];
            imageToFilter.at<Vec3b>(Point(y,x)) = color;
         }
+	}
+		    	    imshow("imgToProcess2222", imageToFilter);
+
+}
+
+void gaussForGrayscale(Mat &imageToFilter, const Mat & original)
+{
+ Mat tempImage = original.clone();
+ int y1, x1;
+ double sum;
+ for(int y=0;y<original.rows;y++)
+    {
+        for(int x=0;x<original.cols;x++)
+        {
+            for (int i =-2; i<=2; ++i)         
+            {
+              y1 = reflect(original.rows, y - i);
+              sum += coeffs[i+2] * original.at<uchar>(Point(y1, x)) ;
+            }
+
+           tempImage.at<uchar>(Point(y,x)) = sum;
+        }
+	}
+
+for(int y=0;y<original.rows;y++)
+    {
+        for(int x=0;x<original.cols;x++)
+        {
+            for (int i =-2; i<=2; ++i)         
+            {
+              x1 = reflect(original.rows, x - i);
+              sum += coeffs[i+2] * tempImage.at<uchar>(Point(y, x1)) ;    
+            }
+        
+           imageToFilter.at<uchar>(Point(y,x)) = sum;
+        }
+	}
+
+}
+
+void runGaussianBlurFilter(Mat &imageToFilter, const Mat & original)
+{
+ if(original.channels() ==3)
+ {
+   gaussForRGB(imageToFilter,original);
+	}else
+	{
+	  gaussForGrayscale(imageToFilter, original);
 	}
 }
 
@@ -129,10 +161,10 @@ Mat imgToProcess = original.clone();
 Mat endImage = original.clone();
 
 
-//cv::Mat invSrc =  cv::Scalar::all(255) - original;
+cv::Mat invSrc =  cv::Scalar::all(255) - original;
 //namedWindow("image", CV_WINDOW_AUTOSIZE);
 cout <<"original.type(): " <<type2str(original) <<"\n"; 
-//imshow("image3", invSrc);
+//imshow("image", invSrc);
 //waitKey();
 
 
@@ -140,18 +172,15 @@ runGaussianBlurFilter(imgToProcess, original);
 
 
 	    imshow("original", original);
- Mat difference1 = original - imgToProcess;
+	    	    imshow("imgToProcess", imgToProcess);
+ /*Mat difference1 = original - imgToProcess;
     imshow("difference1", difference1);
-    //imwrite( "imgToProcess.jpg", imgToProcess );
-    Mat original3= imread( "imgToProcess.jpg", 1 );
-    Mat difference3 = imgToProcess - original3;
     
-        imshow("difference3333331", difference3);
      Mat difference2 = original - endImage;
     imshow("difference2", difference2);
-        imshow("endImage", endImage);
+        imshow("endImage", endImage);*/
         
-        
+      /*  
 	int pixelx,pixely;
 	Mat temp = endImage.clone();
 for(int y=1;y<endImage.rows-1;y++)
@@ -184,7 +213,7 @@ for(int y=1;y<endImage.rows-1;y++)
         }          
     }
             imshow("endImage!!!!", temp);
-
+imwrite("new.jpg", temp);*/
     waitKey(0);
     
     
