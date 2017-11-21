@@ -27,6 +27,92 @@ string type2str(Mat& mat) {
   std::cout <<"mat.channels(): " <<mat.channels() << "\n";
   return r;
 }
+
+int reflect(int M, int x)
+{
+    if(x < 0)
+    {
+        return -x - 1;
+    }
+    if(x >= M)
+    {
+        return 2*M - x - 1;
+    }
+}
+
+vector<vector<int>> Sobelx = {
+{-1, 0 ,1},
+{-2, 0, 2},
+{-1, 0, 1}
+};
+vector<vector<int>> Sobely = {
+{-1, -2 ,-1},
+{0, 0, 0},
+{1, 2, 1}
+};
+
+double coeffs[] = {0.0545, 0.2442, 0.4026, 0.2442, 0.0545};
+
+void runGaussianBlurFilter(Mat &imageToFilter, const Mat & original)
+{
+Mat tempImage = original.clone();
+int y1, x1;
+ for(int y=0;y<original.rows;y++)
+    {
+        for(int x=0;x<original.cols;x++)
+        {
+         // Vec3b color = original.at<Vec3b>(Point(x,y));
+         // vector<double> sum(original.channels(), 0.0);  
+          Vec3b sum;
+            for (int i =-2; i<=2; ++i)         
+            {
+              y1 = reflect(original.rows, y - i);
+              if(original.channels() ==3)
+              {
+                sum[0] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[0] ;
+                sum[1] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[1] ;
+                sum[2] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[2] ;
+              }
+              else
+              {
+                sum += coeffs[i+2] * original.at<Vec3b>(Point(y1, x)) ;      
+              }            
+            }
+          Vec3b color = sum ;
+          tempImage.at<Vec3b>(Point(y,x)) = color;
+        }
+	}
+  imshow("Partial gauss", tempImage);
+for(int y=0;y<original.rows;y++)
+    {
+        for(int x=0;x<original.cols;x++)
+        {
+          Vec3b sum;
+          for(int channels = 0; channels< original.channels(); channels++)
+          {
+            for (int i =-2; i<=2; ++i)         
+            {
+              x1 = reflect(original.rows, x - i);
+              if(original.channels() ==3)
+              {
+                sum[0] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[0] ;
+                sum[1] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[1] ;
+                sum[2] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x))[2] ;
+              }
+              else
+              {
+                sum += coeffs[i+2] * tempImage.at<Vec3b>(Point(y1, x)) ;      
+              }    
+            }
+            
+          }
+          Vec3b color = sum;
+           imageToFilter.at<Vec3b>(Point(y,x)) = color;
+        }
+	}
+}
+
+
 int main(int argc, char** argv )
 {
 vector<Vec3b> vectors = {
@@ -38,143 +124,70 @@ vector<Vec3b> vectors = {
 };
 
 int threshold = 100;
-Mat img= imread( argv[1], 1 );
-Mat imgToProcess = img.clone();
+Mat original= imread( argv[1], 1 ); //IMREAD_GRAYSCALE
+Mat imgToProcess = original.clone();
+Mat endImage = original.clone();
 
-cv::Mat invSrc =  cv::Scalar::all(255) - img;
+
+//cv::Mat invSrc =  cv::Scalar::all(255) - original;
 //namedWindow("image", CV_WINDOW_AUTOSIZE);
-cout <<"img.type(): " <<type2str(img) <<"\n"; 
-//imshow("image", invSrc);
+cout <<"original.type(): " <<type2str(original) <<"\n"; 
+//imshow("image3", invSrc);
 //waitKey();
 
- for(int y=2;y<img.rows;y++)
+
+runGaussianBlurFilter(imgToProcess, original);
+
+
+	    imshow("original", original);
+ Mat difference1 = original - imgToProcess;
+    imshow("difference1", difference1);
+    //imwrite( "imgToProcess.jpg", imgToProcess );
+    Mat original3= imread( "imgToProcess.jpg", 1 );
+    Mat difference3 = imgToProcess - original3;
+    
+        imshow("difference3333331", difference3);
+     Mat difference2 = original - endImage;
+    imshow("difference2", difference2);
+        imshow("endImage", endImage);
+        
+        
+	int pixelx,pixely;
+	Mat temp = endImage.clone();
+for(int y=1;y<endImage.rows-1;y++)
     {
-        for(int x=2;x<img.cols;x++)
+        for(int x=1;x<endImage.cols-1;x++)
         {
-        //cout <<"TU\n";
-          Vec3b color = img.at<Vec3b>(Point(x,y));
-          vector<vector<Vec3b>> gauss ;
-              for(int row =y-2; row <= y+2 ; row++)
-              {
-              vector<Vec3b> gaussTemp ;
-                for(int k =x-2; k<=x+2; k++)
-                {
-                  gaussTemp.push_back(img.at<Vec3b>(Point(k,row)));             
-                }
-                // cout <<"gaussTemp " << gaussTemp << "\n";
-                           // cout <<"gaussTemp.[0] " << gaussTemp[0] << "\n";
-                            // cout <<"gaussTemp.[0] " << (int)gaussTemp[0][0] << "\n";
-                gauss.push_back(gaussTemp);
-              }
-             //
-             
-             
-             
-          Mat mat;   
-             
+           Vec3b value;
+           for(int channels = 0; channels< endImage.channels(); channels++)
+           {
+              pixelx = (Sobelx[0][0] * endImage.at<Vec3b>(Point(x-1, y-1))[channels]) + 
+                       (Sobelx[1][0] * endImage.at<Vec3b>(Point(x-1, y))[channels])   +
+                       (Sobelx[2][0] * endImage.at<Vec3b>(Point(x-1, y+1))[channels]) +
+                       (Sobelx[0][2] * endImage.at<Vec3b>(Point(x+1, y-1))[channels]) +
+                       (Sobelx[1][2] * endImage.at<Vec3b>(Point(x+1, y))[channels])   +
+                       (Sobelx[2][2] * endImage.at<Vec3b>(Point(x+1, y+1))[channels]);
+                                           
+              pixely = (Sobely[0][0] * endImage.at<Vec3b>(Point(x-1, y-1))[channels]) + 
+                       (Sobely[1][0] * endImage.at<Vec3b>(Point(x-1, y))[channels])   +
+                       (Sobely[2][0] * endImage.at<Vec3b>(Point(x-1, y+1))[channels]) +
+                       (Sobely[0][2] * endImage.at<Vec3b>(Point(x+1, y-1))[channels]) +
+                       (Sobely[1][2] * endImage.at<Vec3b>(Point(x+1, y))[channels])   +
+                       (Sobely[2][2] * endImage.at<Vec3b>(Point(x+1, y+1))[channels]);
 
- //    mat.at <uchar>(0,0) = gauss[0][0][0];
-  //  mat.at <uchar>(1,0) = gauss[0] [0][1];
-  //  mat.at <uchar>(2,0) = gauss [0][0][2];
- 
-             
-             
-    //  imshow("image", mat);       
-             
-             
-             
-             ///
-            //  cout <<"gauss.size(): " << gauss.size() << "\n";
-                          //  cout <<"gauss.[0].size(): " << gauss[0].size() << "\n";
-                            //cout <<"gauss.[0][0].size(): " << gauss[0][0].size() << "\n";
-            for(int channels = 0;channels <3;channels++)
-            {//cout <<"TU3\n";
-              int sum=0;
-              int i =0;
-              for(int rr = 0; rr<5 ;rr++)
-              {
-                for(int row= 0; row <5; row++)
-                {
-                  for(int col= 0;col <5; col++)
-                  {
-                     //cout <<"i: " << i << " " << gauss[rr][row] << "\n";
-                    // i++;
-                     sum += vectors[rr][row] * (int)gauss[col][row][channels] ;
-                  }
-                }
+               auto val = ceil(sqrt((pixelx * pixelx) + (pixely*pixely)));
+               if(val > 255) val =255;
+               else if(val < 0) val =0;
+               value[channels] = val;
+           }     
+            temp.at<Vec3b>(Point(x,y)) = value;
+        }          
+    }
+            imshow("endImage!!!!", temp);
 
-              } 
-             // cout <<"sum: " << sum << "\n";
-                 color[channels] = sum/273;
-                // getchar();
-              //cout <<"color: " << color << "\n";
-            }
-           
-	      imgToProcess.at<Vec3b>(Point(x,y)) = color;
-        }
-
-	}
-  
-
-/*
-    for(int y=0;y<img.rows;y++)
-    {
-        for(int x=0;x<img.cols;x++)
-        {
-        Vec3b color = img.at<Vec3b>(Point(x,y));
-	//cout <<"color[0]: "<< color[0] << " color[1]: " << color[1] << " color[2]: " << color[2] << "\n";
-        if(color[0] > threshold && color[1] > threshold && color[2] > threshold)
-        {
-            color[0] = 0;
-            color[1] = 0;
-            color[2] = 0;
-
-            //cout << "Pixel >200 :" << x << "," << y << endl;
-        }
-        else
-        {
-            color[0] = 255;
-            color[1] = 255;
-            color[2] = 255;
-        }
-	img.at<Vec3b>(Point(x,y)) = color;
-	}
-
-    }*/
-    std::cout <<"XXXX\n";
-    imshow("image22", imgToProcess);
-   // imshow("image24442", img);
     waitKey(0);
-
+    
+    
+ 
     return 0;
 }
-
-////
-
-/*
-
- for(int y=0;y<img.rows;y++)
-    {
-        for(int x=0;x<img.cols;x++)
-        {
-        Vec3b color = img.at<Vec3b>(Point(x,y));
-	//cout <<"color[0]: "<< color[0] << " color[1]: " << color[1] << " color[2]: " << color[2] << "\n";
-        if(color[0] > 150 && color[1] > 150 && color[2] > 150)
-        {
-            color[0] = 255;
-            color[1] = 255;
-            color[2] = 255;
-
-            //cout << "Pixel >200 :" << x << "," << y << endl;
-        }
-        else
-        {
-            color.val[0] = 0;
-            color.val[1] = 0;
-            color.val[2] = 0;
-        }
-	img.at<Vec3b>(Point(x,y)) = color;
-	}
-
-    }
-    imshow("image22", img);*/

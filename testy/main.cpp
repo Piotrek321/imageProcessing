@@ -1,76 +1,45 @@
-#include<iostream>
-#include<opencv2/imgproc/imgproc.hpp>
-#include<opencv2/highgui/highgui.hpp>
+#include <iostream>
+#include <cmath>
+#include <iomanip>
  
 using namespace std;
-using namespace cv;
  
-// reflected indexing for border processing
-int reflect(int M, int x)
+void createFilter(double gKernel[][5])
 {
-    if(x < 0)
+    // set standard deviation to 1.0
+    double sigma = 1.0;
+    double r, s = 2.0 * sigma * sigma;
+ 
+    // sum is for normalization
+    double sum = 0.0;
+ 
+    // generate 5x5 kernel
+    for (int x = -1; x <= 0; x++)
     {
-        return -x - 1;
+        for(int y = -2; y <= 2; y++)
+        {
+            r = sqrt(x*x + y*y);
+            gKernel[x+1][y + 2] = (exp(-(r*r)/s))/(M_PI * s);
+            sum += gKernel[x + 1][y + 2];
+        }
     }
-    if(x >= M)
-    {
-        return 2*M - x - 1;
-    }
+ 
+    // normalize the Kernel
+    for(int i = 0; i < 1; ++i)
+        for(int j = 0; j < 5; ++j)
+            gKernel[i][j] /= sum;
+ 
 }
-
+ 
 int main()
 {
- 
-      Mat src, dst, temp;
-      float sum, x1, y1;
- 
-      /// Load an image
-      src = imread("Lenna.png", CV_LOAD_IMAGE_GRAYSCALE);
- 
-      if( !src.data )
-      { return -1; }
- 
- 
-      // coefficients of 1D gaussian kernel with sigma = 1
-      double coeffs[] = {0.0545, 0.2442, 0.4026, 0.2442, 0.0545};
- 
-      dst = src.clone();
-      temp = src.clone();
- 
-        // along y - direction
-        for(int y = 0; y < src.rows; y++){
-            for(int x = 0; x < src.cols; x++){
-                sum = 0.0;
-                for(int i = -2; i <= 2; i++){
-                    y1 = reflect(src.rows, y - i);
-                    sum = sum + coeffs[i + 2]*src.at<uchar>(y1, x);
-                }
-                temp.at<uchar>(y,x) = sum;
-            }
-        }
- 
-        // along x - direction
-        for(int y = 0; y < src.rows; y++){
-            for(int x = 0; x < src.cols; x++){
-                sum = 0.0;
-                for(int i = -2; i <= 2; i++){
-                    x1 = reflect(src.cols, x - i);
-                    sum = sum + coeffs[i + 2]*temp.at<uchar>(y, x1);
-                }
-                dst.at<uchar>(y,x) = sum;
-            }
-        }
- 
- 
- 
-        namedWindow("final");
-        imshow("final", dst);
- 
-        namedWindow("initial");
-        imshow("initial", src);
- 
-      waitKey();
- 
- 
-    return 0;
+    double gKernel[1][5];
+    createFilter(gKernel);
+    for(int i = 0; i < 1; ++i)
+    {
+        for (int j = 0; j < 5; ++j)
+            cout<<gKernel[i][j]<<"\t";
+        cout<<"X\n" <<endl;
+        return 1;
+    }
 }
