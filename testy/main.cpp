@@ -1,45 +1,70 @@
-#include <iostream>
-#include <cmath>
-#include <iomanip>
- 
-using namespace std;
- 
-void createFilter(double gKernel[][5])
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <stdlib.h>
+#include <stdio.h>
+
+using namespace cv;
+
+/// Global variables
+
+Mat src, src_gray;
+Mat dst, detected_edges;
+
+int edgeThresh = 1;
+int lowThreshold;
+int const max_lowThreshold = 100;
+int ratio = 3;
+int kernel_size = 3;
+char* window_name = "Edge Map";
+
+/**
+ * @function CannyThreshold
+ * @brief Trackbar callback - Canny thresholds input with a ratio 1:3
+ */
+void CannyThreshold(int, void*)
 {
-    // set standard deviation to 1.0
-    double sigma = 1.0;
-    double r, s = 2.0 * sigma * sigma;
- 
-    // sum is for normalization
-    double sum = 0.0;
- 
-    // generate 5x5 kernel
-    for (int x = -1; x <= 0; x++)
-    {
-        for(int y = -2; y <= 2; y++)
-        {
-            r = sqrt(x*x + y*y);
-            gKernel[x+1][y + 2] = (exp(-(r*r)/s))/(M_PI * s);
-            sum += gKernel[x + 1][y + 2];
-        }
-    }
- 
-    // normalize the Kernel
-    for(int i = 0; i < 1; ++i)
-        for(int j = 0; j < 5; ++j)
-            gKernel[i][j] /= sum;
- 
-}
- 
-int main()
+  /// Reduce noise with a kernel 3x3
+  blur( src_gray, detected_edges, Size(3,3) );
+imshow( "AAA", detected_edges );
+imshow( "dst", dst );
+  /// Canny detector
+  Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+imshow( "BBBB", detected_edges );
+imshow( "dst2", dst );
+  /// Using Canny's output as a mask, we display our result
+  dst = Scalar::all(0);
+imshow( "dst3", dst );
+  src.copyTo( dst, detected_edges);
+  imshow( window_name, dst );
+ }
+
+
+/** @function main */
+int main( int argc, char** argv )
 {
-    double gKernel[1][5];
-    createFilter(gKernel);
-    for(int i = 0; i < 1; ++i)
-    {
-        for (int j = 0; j < 5; ++j)
-            cout<<gKernel[i][j]<<"\t";
-        cout<<"X\n" <<endl;
-        return 1;
-    }
-}
+  /// Load an image
+  src = imread( argv[1] );
+
+  if( !src.data )
+  { return -1; }
+
+  /// Create a matrix of the same type and size as src (for dst)
+  dst.create( src.size(), src.type() );
+
+  /// Convert the image to grayscale
+  cvtColor( src, src_gray, CV_BGR2GRAY );
+
+  /// Create a window
+  namedWindow( window_name, CV_WINDOW_AUTOSIZE );
+
+  /// Create a Trackbar for user to enter threshold
+  createTrackbar( "Min Threshold:", window_name, &lowThreshold, max_lowThreshold, CannyThreshold );
+
+  /// Show the image
+  CannyThreshold(0, 0);
+
+  /// Wait until user exit program by pressing a key
+  waitKey(0);
+
+  return 0;
+  }

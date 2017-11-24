@@ -45,11 +45,13 @@ vector<vector<int>> Sobelx = {
 {-2, 0, 2},
 {-1, 0, 1}
 };
+
 vector<vector<int>> Sobely = {
 {-1, -2 ,-1},
 {0, 0, 0},
 {1, 2, 1}
 };
+
 double coeffs[] = {0.0545, 0.2442, 0.4026, 0.2442, 0.0545};
 
 void gaussForRGB(Mat &imageToFilter, const Mat & original)
@@ -75,7 +77,7 @@ void gaussForRGB(Mat &imageToFilter, const Mat & original)
            tempImage.at<Vec3b>(Point(y,x)) = color;
         }
 	}
-		    	    imshow("tempImage", tempImage);
+		    	    //imshow("tempImage", tempImage);
 for(int y=0;y<original.rows;y++)
     {
         for(int x=0;x<original.cols;x++)
@@ -143,14 +145,119 @@ void runGaussianBlurFilter(Mat &imageToFilter, const Mat & original)
 }
 
 
+void SobelFilterGrayScale(Mat &imageToFilter, Mat &original)
+{
+	int pixelx,pixely;
+
+	for(int y=1;y<original.rows-1;y++)
+    {
+        for(int x=1;x<original.cols-1;x++)
+        {
+              pixelx = (Sobelx[0][0] * original.at<uchar>(Point(x-1, y-1))) + 
+                       (Sobelx[1][0] * original.at<uchar>(Point(x-1, y)))   +
+                       (Sobelx[2][0] * original.at<uchar>(Point(x-1, y+1))) +
+                       (Sobelx[0][2] * original.at<uchar>(Point(x+1, y-1))) +
+                       (Sobelx[1][2] * original.at<uchar>(Point(x+1, y)))   +
+                       (Sobelx[2][2] * original.at<uchar>(Point(x+1, y+1)));
+                                           
+              pixely = (Sobely[0][0] * original.at<uchar>(Point(x-1, y-1))) + 
+                       (Sobely[1][0] * original.at<uchar>(Point(x-1, y)))   +
+                       (Sobely[2][0] * original.at<uchar>(Point(x-1, y+1))) +
+                       (Sobely[0][2] * original.at<uchar>(Point(x+1, y-1))) +
+                       (Sobely[1][2] * original.at<uchar>(Point(x+1, y)))   +
+                       (Sobely[2][2] * original.at<uchar>(Point(x+1, y+1)));
+
+               auto value = ceil(sqrt((pixelx * pixelx) + (pixely*pixely)));
+               if(value > 255) value =255;
+               else if(value < 0) value =0;
+            	imageToFilter.at<uchar>(Point(x,y)) = value;
+         }     
+
+    }          
+}
+
+
+void SobelFilterRGB(Mat &imageToFilter, Mat &original)
+{
+int pixelx,pixely;
+
+for(int y=1;y<original.rows-1;y++)
+    {
+        for(int x=1;x<original.cols-1;x++)
+        {
+           Vec3b value;
+           for(int channels = 0; channels< original.channels(); channels++)
+           {
+              pixelx = (Sobelx[0][0] * original.at<Vec3b>(Point(x-1, y-1))[channels]) + 
+                       (Sobelx[1][0] * original.at<Vec3b>(Point(x-1, y))[channels])   +
+                       (Sobelx[2][0] * original.at<Vec3b>(Point(x-1, y+1))[channels]) +
+                       (Sobelx[0][2] * original.at<Vec3b>(Point(x+1, y-1))[channels]) +
+                       (Sobelx[1][2] * original.at<Vec3b>(Point(x+1, y))[channels])   +
+                       (Sobelx[2][2] * original.at<Vec3b>(Point(x+1, y+1))[channels]);
+                                           
+              pixely = (Sobely[0][0] * original.at<Vec3b>(Point(x-1, y-1))[channels]) + 
+                       (Sobely[1][0] * original.at<Vec3b>(Point(x-1, y))[channels])   +
+                       (Sobely[2][0] * original.at<Vec3b>(Point(x-1, y+1))[channels]) +
+                       (Sobely[0][2] * original.at<Vec3b>(Point(x+1, y-1))[channels]) +
+                       (Sobely[1][2] * original.at<Vec3b>(Point(x+1, y))[channels])   +
+                       (Sobely[2][2] * original.at<Vec3b>(Point(x+1, y+1))[channels]);
+
+               auto val = ceil(sqrt((pixelx * pixelx) + (pixely*pixely)));
+               if(val > 255) val =255;
+               else if(val < 0) val =0;
+               value[channels] = val;
+           }     
+            imageToFilter.at<Vec3b>(Point(x,y)) = value;
+        }          
+    }
+}
+
+void SobelFilter(Mat &imageToFilter, Mat &original)
+{
+if(original.channels() ==3)
+ {
+   SobelFilterRGB(imageToFilter,original);
+	}else
+	{
+	  SobelFilterGrayScale(imageToFilter, original);
+	}
+}
+
+void thresholdFilteringGrayscale(Mat &imageToFilter, int threshold)
+{
+	for(int y=1;y<imageToFilter.rows-1;y++)
+    {
+        for(int x=1;x<imageToFilter.cols-1;x++)
+        {
+			 if(imageToFilter.at<uchar>(Point(x, y)) < threshold) imageToFilter.at<uchar>(Point(x, y)) = 0; 
+		  }
+	 }
+}
+
+void thresholdFilteringRGB(Mat &imageToFilter, int threshold)
+{
+
+}
+
+void thresholdFiltering(Mat &imageToFilter, int threshold)
+{
+if(imageToFilter.channels() ==3)
+ {
+   thresholdFilteringRGB(imageToFilter, threshold);
+	}else
+	{
+	  thresholdFilteringGrayscale(imageToFilter, threshold);
+	}
+}
+
 int main(int argc, char** argv )
 {
-Mat original= imread( argv[1], 1 ); //IMREAD_GRAYSCALE
+Mat original= imread( argv[1], IMREAD_GRAYSCALE ); //IMREAD_GRAYSCALE
 Mat imgToProcess = original.clone();
 Mat endImage = original.clone();
 cv::Mat invSrc =  cv::Scalar::all(255) - original;
 cout <<"original.type(): " <<type2str(original) <<"\n"; 
-
+int threshold = 50;
 /*
 Mat tempImage = original.clone();
  int y1, x1;
@@ -176,9 +283,12 @@ Mat tempImage = original.clone();
 		    	   // imshow("tempImage", tempImage);
 runGaussianBlurFilter(imgToProcess, original);
 
+SobelFilter(imgToProcess, original);
 
-	    imshow("original", original);
-	    	    imshow("imgToProcess", imgToProcess);
+imshow("original", original);
+imshow("imgToProcess", imgToProcess);
+thresholdFiltering(imgToProcess, threshold);
+imshow("imgToProcess2", imgToProcess);
  /*Mat difference1 = original - imgToProcess;
     imshow("difference1", difference1);
     
@@ -187,39 +297,9 @@ runGaussianBlurFilter(imgToProcess, original);
         imshow("endImage", endImage);*/
         
       
-	int pixelx,pixely;
-	Mat temp = endImage.clone();
-for(int y=1;y<endImage.rows-1;y++)
-    {
-        for(int x=1;x<endImage.cols-1;x++)
-        {
-           Vec3b value;
-           for(int channels = 0; channels< endImage.channels(); channels++)
-           {
-              pixelx = (Sobelx[0][0] * endImage.at<Vec3b>(Point(x-1, y-1))[channels]) + 
-                       (Sobelx[1][0] * endImage.at<Vec3b>(Point(x-1, y))[channels])   +
-                       (Sobelx[2][0] * endImage.at<Vec3b>(Point(x-1, y+1))[channels]) +
-                       (Sobelx[0][2] * endImage.at<Vec3b>(Point(x+1, y-1))[channels]) +
-                       (Sobelx[1][2] * endImage.at<Vec3b>(Point(x+1, y))[channels])   +
-                       (Sobelx[2][2] * endImage.at<Vec3b>(Point(x+1, y+1))[channels]);
-                                           
-              pixely = (Sobely[0][0] * endImage.at<Vec3b>(Point(x-1, y-1))[channels]) + 
-                       (Sobely[1][0] * endImage.at<Vec3b>(Point(x-1, y))[channels])   +
-                       (Sobely[2][0] * endImage.at<Vec3b>(Point(x-1, y+1))[channels]) +
-                       (Sobely[0][2] * endImage.at<Vec3b>(Point(x+1, y-1))[channels]) +
-                       (Sobely[1][2] * endImage.at<Vec3b>(Point(x+1, y))[channels])   +
-                       (Sobely[2][2] * endImage.at<Vec3b>(Point(x+1, y+1))[channels]);
-
-               auto val = ceil(sqrt((pixelx * pixelx) + (pixely*pixely)));
-               if(val > 255) val =255;
-               else if(val < 0) val =0;
-               value[channels] = val;
-           }     
-            temp.at<Vec3b>(Point(x,y)) = value;
-        }          
-    }
-            imshow("endImage!!!!", temp);
-imwrite("new.jpg", temp);
+	
+        //    imshow("endImage!!!!", temp);
+//imwrite("new.jpg", temp);
     waitKey(0);
     
     

@@ -1,3 +1,0 @@
-/home/pibe/Desktop/OPENCV/testy/CMakeFiles/edit_cache.dir
-/home/pibe/Desktop/OPENCV/testy/CMakeFiles/rebuild_cache.dir
-/home/pibe/Desktop/OPENCV/testy/CMakeFiles/DisplayImage.dir
