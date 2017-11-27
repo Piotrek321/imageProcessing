@@ -66,15 +66,15 @@ void gaussForRGB(Mat &imageToFilter, const Mat & original)
             for (int i =-2; i<=2; ++i)         
             {
               y1 = reflect(original.rows, y - i);
-              sum[0] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[0] ;
-              sum[1] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[1] ;
-              sum[2] += coeffs[i+2] * original.at<Vec3b>(Point(y1, x))[2] ;          
+              sum[0] += coeffs[i+2] * original.at<Vec3b>(Point(x, y1))[0] ;
+              sum[1] += coeffs[i+2] * original.at<Vec3b>(Point(x, y1))[1] ;
+              sum[2] += coeffs[i+2] * original.at<Vec3b>(Point(x, y1))[2] ;          
             }
           Vec3b color;   
             color[0] = sum[0];
             color[1] = sum[1];
             color[2] = sum[2];
-           tempImage.at<Vec3b>(Point(y,x)) = color;
+           tempImage.at<Vec3b>(Point(x,y)) = color;
         }
 	}
 		    	    //imshow("tempImage", tempImage);
@@ -85,15 +85,15 @@ for(int y=0;y<original.rows;y++)
             for (int i =-2; i<=2; ++i)         
             {
               x1 = reflect(original.rows, x - i);
-              sum[0] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[0] ;
-              sum[1] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[1] ;
-              sum[2] += coeffs[i+2] * tempImage.at<Vec3b>(Point(y, x1))[2] ;          
+              sum[0] += coeffs[i+2] * tempImage.at<Vec3b>(Point(x1, y))[0] ;
+              sum[1] += coeffs[i+2] * tempImage.at<Vec3b>(Point(x1, y))[1] ;
+              sum[2] += coeffs[i+2] * tempImage.at<Vec3b>(Point(x1, y))[2] ;          
             }
           Vec3b color;
             color[0] = sum[0];
             color[1] = sum[1];
             color[2] = sum[2];
-           imageToFilter.at<Vec3b>(Point(y,x)) = color;
+           imageToFilter.at<Vec3b>(Point(x,y)) = color;
         }
 	}
 }
@@ -102,18 +102,19 @@ void gaussForGrayscale(Mat &imageToFilter, const Mat & original)
 {
  Mat tempImage = original.clone();
  int y1, x1;
- double sum;
+
  for(int y=0;y<original.rows;y++)
     {
         for(int x=0;x<original.cols;x++)
         {
+           double sum =0.0;
             for (int i =-2; i<=2; ++i)         
             {
               y1 = reflect(original.rows, y - i);
-              sum += coeffs[i+2] * original.at<uchar>(Point(y1, x)) ;
+              sum += coeffs[i+2] * original.at<uchar>(Point(x, y1)) ;
             }
 
-           tempImage.at<uchar>(Point(y,x)) = sum;
+           tempImage.at<uchar>(Point(x,y)) = sum;
         }
 	}
 
@@ -121,13 +122,14 @@ for(int y=0;y<original.rows;y++)
     {
         for(int x=0;x<original.cols;x++)
         {
+            double sum =0.0;
             for (int i =-2; i<=2; ++i)         
             {
               x1 = reflect(original.rows, x - i);
-              sum += coeffs[i+2] * tempImage.at<uchar>(Point(y, x1)) ;    
+              sum += coeffs[i+2] * tempImage.at<uchar>(Point(x1, y)) ;    
             }
         
-           imageToFilter.at<uchar>(Point(y,x)) = sum;
+           imageToFilter.at<uchar>(Point(x,y)) = sum;
         }
 	}
 
